@@ -1,6 +1,6 @@
 # Transact
 
-Transact is a local credit card transaction analysis app. Upload CSV statements, inspect spending by month and category, and filter the dashboard without sending data to a server.
+Transact is a free credit card transaction analysis app. Upload CSV statements, inspect spending by month and category, and filter the dashboard without sending data to a server.
 
 ## Features
 
