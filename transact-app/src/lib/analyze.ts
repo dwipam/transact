@@ -112,19 +112,20 @@ export function getChartData(
   const sorted = [...totals.entries()].sort((a, b) => b[1] - a[1]);
   const topCats = sorted.slice(0, MAX_CHART_CATS - 1).map(([c]) => c);
   const otherCats = new Set(sorted.slice(MAX_CHART_CATS - 1).map(([c]) => c));
+  const otherLabel = topCats.includes('Other') ? 'Other Categories' : 'Other';
 
   const limitedData = data.map((row) => {
     const newRow: MonthlyCategorySpend = { month: row.month };
     for (const cat of topCats) newRow[cat] = (row[cat] as number) || 0;
     let other = 0;
     otherCats.forEach((c) => { other += (row[c] as number) || 0; });
-    if (other > 0) newRow['Other'] = Math.round(other * 100) / 100;
+    if (other > 0) newRow[otherLabel] = Math.round(other * 100) / 100;
     return newRow;
   });
 
   return {
     data: limitedData,
-    categories: [...topCats, ...(otherCats.size > 0 ? ['Other'] : [])],
+    categories: [...topCats, ...(otherCats.size > 0 ? [otherLabel] : [])],
   };
 }
 

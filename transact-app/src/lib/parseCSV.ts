@@ -18,7 +18,7 @@ function parseDate(s: string): Date {
   const clean = s.trim();
   const isoMatch = clean.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (isoMatch) return new Date(+isoMatch[1], +isoMatch[2] - 1, +isoMatch[3]);
-  const parts = clean.split(/[\/\-]/);
+  const parts = clean.split(/[/-]/);
   if (parts.length === 3) {
     const [a, b, c] = parts;
     if (a.length === 4) return new Date(+a, +b - 1, +c); // YYYY-MM-DD or YYYY/MM/DD
@@ -129,12 +129,12 @@ export async function parseCSVFile(file: File): Promise<Transaction[]> {
         const source = file.name.replace(/\.csv$/i, '');
         const txns: Transaction[] = [];
         for (const row of results.data) {
-          let txn: Transaction | null = null;
-          if (format === 'chase') txn = mapChase(row, source);
-          else if (format === 'amex') txn = mapAmex(row, source);
-          else if (format === 'citi') txn = mapCiti(row, source);
-          else if (format === 'capitalOne') txn = mapCapitalOne(row, source);
-          else txn = mapUnknown(row, headers, source);
+          const txn =
+            format === 'chase' ? mapChase(row, source) :
+            format === 'amex' ? mapAmex(row, source) :
+            format === 'citi' ? mapCiti(row, source) :
+            format === 'capitalOne' ? mapCapitalOne(row, source) :
+            mapUnknown(row, headers, source);
           if (txn && !isNaN(txn.date.getTime())) txns.push(txn);
         }
         resolve(txns);

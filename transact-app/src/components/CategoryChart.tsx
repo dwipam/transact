@@ -3,42 +3,15 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell,
 } from 'recharts';
+import type { TooltipContentProps } from 'recharts';
 import type { MonthlyCategorySpend } from '../lib/analyze';
-
-export const CATEGORY_COLORS: Record<string, string> = {
-  Dining: '#f97316',
-  Groceries: '#22c55e',
-  Shopping: '#3b82f6',
-  Travel: '#06b6d4',
-  Transportation: '#8b5cf6',
-  'Gas & Auto': '#eab308',
-  'Bills & Utilities': '#64748b',
-  Health: '#ec4899',
-  Entertainment: '#a855f7',
-  Business: '#0ea5e9',
-  Fees: '#ef4444',
-  Shipping: '#84cc16',
-  Home: '#f59e0b',
-  Personal: '#d946ef',
-  Education: '#14b8a6',
-  Other: '#94a3b8',
-  Uncategorized: '#cbd5e1',
-};
-
-const FALLBACK_COLORS = [
-  '#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6',
-  '#06b6d4','#f97316','#84cc16','#ec4899','#6366f1',
-];
-
-export function catColor(cat: string, idx: number): string {
-  return CATEGORY_COLORS[cat] ?? FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
-}
+import { catColor } from '../lib/categoryColors';
 
 interface Props {
   data: MonthlyCategorySpend[];
   categories: string[];
-  selectedBar?: { month: string; category: string } | null;
-  onBarSelect?: (selection: { month: string; category: string }) => void;
+  selectedMonth?: string | null;
+  onMonthSelect?: (month: string) => void;
 }
 
 function fmtMonth(m: string) {
@@ -50,26 +23,31 @@ function fmtDollar(v: number) {
   return `$${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 }
 
-export default function CategoryChart({ data, categories, selectedBar, onBarSelect }: Props) {
+export default function CategoryChart({ data, categories, selectedMonth, onMonthSelect }: Props) {
   const [hidden, setHidden] = useState<Set<string>>(new Set());
 
   const toggle = (cat: string) =>
-    setHidden((prev) => { const n = new Set(prev); n.has(cat) ? n.delete(cat) : n.add(cat); return n; });
+    setHidden((prev) => {
+      const n = new Set(prev);
+      if (n.has(cat)) n.delete(cat);
+      else n.add(cat);
+      return n;
+    });
 
   // Defined as a stable render prop so Recharts doesn't remount it
-  const renderTooltip = ({ active, payload, label }: any) => {
+  const renderTooltip = ({ active, payload, label }: TooltipContentProps) => {
     if (!active || !payload?.length) return null;
-    const visible = (payload as any[]).filter((p) => !hidden.has(p.dataKey) && Number(p.value) > 0);
+    const visible = payload.filter((p) => !hidden.has(String(p.dataKey)) && Number(p.value) > 0);
     if (!visible.length) return null;
     const total = visible.reduce((s, p) => s + Number(p.value), 0);
     return (
       <div className="bg-white border border-slate-200 rounded-xl shadow-lg p-3 text-xs min-w-40">
-        <p className="font-semibold text-slate-600 mb-2">{fmtMonth(label)}</p>
+        <p className="font-semibold text-slate-600 mb-2">{fmtMonth(String(label ?? ''))}</p>
         {visible.map((p, i) => (
           <div key={i} className="flex items-center justify-between gap-4 py-0.5">
             <span className="flex items-center gap-1.5 text-slate-600">
               <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: p.fill }} />
-              {p.dataKey}
+              {String(p.dataKey)}
             </span>
             <span className="font-medium text-slate-800">{fmtDollar(Number(p.value))}</span>
           </div>
@@ -135,7 +113,8 @@ export default function CategoryChart({ data, categories, selectedBar, onBarSele
           <Tooltip
             content={renderTooltip}
             wrapperStyle={{ zIndex: 50 }}
-            cursor={{ fill: 'rgba(0,0,0,0.04)' }}
+            shared={false}
+            cursor={false}
             allowEscapeViewBox={{ x: false, y: true }}
           />
           {categories.map((cat, i) => (
@@ -146,11 +125,14 @@ export default function CategoryChart({ data, categories, selectedBar, onBarSele
               hide={hidden.has(cat)}
               fill={catColor(cat, i)}
               radius={i === categories.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
-              onClick={(_, index) => onBarSelect?.({ month: data[index].month, category: cat })}
+              onClick={(entry) => {
+                if (Number(entry.value) <= 0) return;
+                onMonthSelect?.(String(entry.payload.month));
+              }}
             >
               {data.map((row, j) => {
-                const isSelected = selectedBar?.month === row.month && selectedBar.category === cat;
-                const hasSelection = Boolean(selectedBar);
+                const isSelected = selectedMonth === row.month;
+                const hasSelection = Boolean(selectedMonth);
                 return (
                   <Cell
                     key={j}

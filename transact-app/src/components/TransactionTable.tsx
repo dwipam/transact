@@ -1,13 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { Transaction } from '../types';
-import { CATEGORY_COLORS } from './CategoryChart';
+import { CATEGORY_COLORS } from '../lib/categoryColors';
 import { cleanMerchantDisplay } from '../lib/categories';
 
 interface Props {
   transactions: Transaction[];
   chartFilter?: {
     month: string;
-    categories: string[];
     label: string;
   } | null;
   onClearChartFilter?: () => void;
@@ -28,19 +27,17 @@ export default function TransactionTable({ transactions, chartFilter, onClearCha
   const categories = Array.from(new Set(expenses.map((t) => t.category))).sort();
 
   const filtered = expenses
-    .filter((t) => !chartFilter || (
-      monthKey(t.date) === chartFilter.month && chartFilter.categories.includes(t.category)
-    ))
+    .filter((t) => !chartFilter || monthKey(t.date) === chartFilter.month)
     .filter((t) => !search || t.description.toLowerCase().includes(search.toLowerCase()))
     .filter((t) => !category || t.category === category)
     .sort((a, b) => b.date.getTime() - a.date.getTime());
 
   const pages = Math.ceil(filtered.length / PAGE_SIZE);
-  const slice = filtered.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+  const currentPage = Math.min(page, Math.max(pages - 1, 0));
+  const slice = filtered.slice(currentPage * PAGE_SIZE, currentPage * PAGE_SIZE + PAGE_SIZE);
 
   function handleSearch(v: string) { setSearch(v); setPage(0); }
   function handleCategory(v: string) { setCategory(v); setPage(0); }
-  useEffect(() => setPage(0), [chartFilter?.month, chartFilter?.label]);
 
   const catColor = (cat: string) => CATEGORY_COLORS[cat] ?? '#94a3b8';
 
@@ -128,15 +125,15 @@ export default function TransactionTable({ transactions, chartFilter, onClearCha
       {/* Pagination */}
       {pages > 1 && (
         <div className="px-6 py-3 border-t border-slate-100 flex items-center justify-between text-sm text-slate-500 bg-slate-50/40">
-          <span className="text-xs">Page {page + 1} of {pages}</span>
+          <span className="text-xs">Page {currentPage + 1} of {pages}</span>
           <div className="flex gap-1">
             <button
-              disabled={page === 0}
+              disabled={currentPage === 0}
               onClick={() => setPage((p) => p - 1)}
               className="px-3 py-1.5 rounded-lg border border-slate-200 disabled:opacity-30 hover:bg-white text-xs"
             >← Prev</button>
             <button
-              disabled={page >= pages - 1}
+              disabled={currentPage >= pages - 1}
               onClick={() => setPage((p) => p + 1)}
               className="px-3 py-1.5 rounded-lg border border-slate-200 disabled:opacity-30 hover:bg-white text-xs"
             >Next →</button>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { Transaction } from './types';
 import { parseCSVFile } from './lib/parseCSV';
 import {
@@ -24,7 +24,8 @@ export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadedFiles, setLoadedFiles] = useState<string[]>([]);
-  const [selectedBar, setSelectedBar] = useState<{ month: string; category: string } | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  const transactionsRef = useRef<HTMLElement>(null);
 
   async function handleFiles(files: File[]) {
     setLoading(true);
@@ -37,7 +38,7 @@ export default function App() {
     }
   }
 
-  function reset() { setTransactions([]); setLoadedFiles([]); setSelectedBar(null); }
+  function reset() { setTransactions([]); setLoadedFiles([]); setSelectedMonth(null); }
 
   const monthlyData   = getMonthlyCategorySpend(transactions);
   const allCategories = getAllCategories(monthlyData);
@@ -48,17 +49,17 @@ export default function App() {
   const recurring     = getRecurringMerchants(transactions);
   const stats         = getSummaryStats(transactions, monthlyData);
   const hasData       = transactions.length > 0;
-  const otherCategories = allCategories.filter((cat) => !chartCategories.includes(cat));
-  const chartFilter = selectedBar ? {
-    month: selectedBar.month,
-    categories: selectedBar.category === 'Other' ? otherCategories : [selectedBar.category],
-    label: `${fmtMonthLong(selectedBar.month)} · ${selectedBar.category}`,
+  const chartFilter = selectedMonth ? {
+    month: selectedMonth,
+    label: fmtMonthLong(selectedMonth),
   } : null;
 
-  function handleBarSelect(next: { month: string; category: string }) {
-    setSelectedBar((prev) => (
-      prev && prev.month === next.month && prev.category === next.category ? null : next
-    ));
+  function handleMonthSelect(month: string) {
+    const isSameSelection = selectedMonth === month;
+    setSelectedMonth(isSameSelection ? null : month);
+    if (!isSameSelection) {
+      requestAnimationFrame(() => transactionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    }
   }
 
   return (
@@ -126,8 +127,8 @@ export default function App() {
                   <CategoryChart
                     data={chartData}
                     categories={chartCategories}
-                    selectedBar={selectedBar}
-                    onBarSelect={handleBarSelect}
+                    selectedMonth={selectedMonth}
+                    onMonthSelect={handleMonthSelect}
                   />
                 </div>
                 <div>
@@ -145,12 +146,12 @@ export default function App() {
             )}
 
             {/* Transactions */}
-            <section>
+            <section ref={transactionsRef}>
               <SectionLabel>Transactions</SectionLabel>
               <TransactionTable
                 transactions={transactions}
                 chartFilter={chartFilter}
-                onClearChartFilter={() => setSelectedBar(null)}
+                onClearChartFilter={() => setSelectedMonth(null)}
               />
             </section>
           </>

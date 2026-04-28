@@ -1,6 +1,7 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import type { TooltipContentProps } from 'recharts';
 import type { CategoryTotal } from '../lib/analyze';
-import { catColor } from './CategoryChart';
+import { catColor } from '../lib/categoryColors';
 
 interface Props {
   data: CategoryTotal[];
@@ -13,9 +14,11 @@ function fmtDollar(v: number) {
 export default function CategoryBreakdown({ data }: Props) {
   if (!data.length) return null;
 
-  const renderTooltip = ({ active, payload }: any) => {
+  const renderTooltip = ({ active, payload }: TooltipContentProps) => {
     if (!active || !payload?.length) return null;
-    const { category, total, pct } = payload[0].payload as CategoryTotal;
+    const item = payload[0].payload as CategoryTotal | undefined;
+    if (!item) return null;
+    const { category, total, pct } = item;
     return (
       <div className="bg-white border border-slate-200 rounded-xl shadow-lg p-3 text-xs">
         <p className="font-semibold text-slate-700">{category}</p>

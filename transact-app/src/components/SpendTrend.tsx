@@ -2,6 +2,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine,
 } from 'recharts';
+import type { TooltipContentProps } from 'recharts';
 import type { MonthlyTotal } from '../lib/analyze';
 
 interface Props {
@@ -23,7 +24,7 @@ export default function SpendTrend({ data }: Props) {
   const avg = data.reduce((s, d) => s + d.total, 0) / data.length;
   const display = data.map((d) => ({ ...d, month: fmtMonth(d.month) }));
 
-  const renderTooltip = ({ active, payload, label }: any) => {
+  const renderTooltip = ({ active, payload, label }: TooltipContentProps) => {
     if (!active || !payload?.length) return null;
     const val = Number(payload[0].value);
     const diff = val - avg;

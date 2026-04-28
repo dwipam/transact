@@ -1,6 +1,7 @@
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
+import type { TooltipContentProps } from 'recharts';
 import type { MerchantTotal } from '../lib/analyze';
 import { cleanMerchantDisplay } from '../lib/categories';
 
@@ -23,9 +24,11 @@ export default function TopMerchants({ data }: Props) {
     label: cleanMerchantDisplay(d.merchant).slice(0, 28),
   }));
 
-  const renderTooltip = ({ active, payload }: any) => {
+  const renderTooltip = ({ active, payload }: TooltipContentProps) => {
     if (!active || !payload?.length) return null;
-    const { merchant, total, count } = payload[0].payload as MerchantTotal & { label: string };
+    const item = payload[0].payload as (MerchantTotal & { label: string }) | undefined;
+    if (!item) return null;
+    const { merchant, total, count } = item;
     return (
       <div className="bg-white border border-slate-200 rounded-xl shadow-lg p-3 text-xs">
         <p className="font-semibold text-slate-700 capitalize mb-1">{merchant}</p>
