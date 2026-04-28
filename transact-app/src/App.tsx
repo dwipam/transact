@@ -24,6 +24,7 @@ export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadedFiles, setLoadedFiles] = useState<string[]>([]);
+  const [selectedBar, setSelectedBar] = useState<{ month: string; category: string } | null>(null);
 
   async function handleFiles(files: File[]) {
     setLoading(true);
@@ -36,7 +37,7 @@ export default function App() {
     }
   }
 
-  function reset() { setTransactions([]); setLoadedFiles([]); }
+  function reset() { setTransactions([]); setLoadedFiles([]); setSelectedBar(null); }
 
   const monthlyData   = getMonthlyCategorySpend(transactions);
   const allCategories = getAllCategories(monthlyData);
@@ -47,6 +48,18 @@ export default function App() {
   const recurring     = getRecurringMerchants(transactions);
   const stats         = getSummaryStats(transactions, monthlyData);
   const hasData       = transactions.length > 0;
+  const otherCategories = allCategories.filter((cat) => !chartCategories.includes(cat));
+  const chartFilter = selectedBar ? {
+    month: selectedBar.month,
+    categories: selectedBar.category === 'Other' ? otherCategories : [selectedBar.category],
+    label: `${fmtMonthLong(selectedBar.month)} · ${selectedBar.category}`,
+  } : null;
+
+  function handleBarSelect(next: { month: string; category: string }) {
+    setSelectedBar((prev) => (
+      prev && prev.month === next.month && prev.category === next.category ? null : next
+    ));
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -110,7 +123,12 @@ export default function App() {
               <SectionLabel>Category Detail</SectionLabel>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div className="lg:col-span-2">
-                  <CategoryChart data={chartData} categories={chartCategories} />
+                  <CategoryChart
+                    data={chartData}
+                    categories={chartCategories}
+                    selectedBar={selectedBar}
+                    onBarSelect={handleBarSelect}
+                  />
                 </div>
                 <div>
                   <TopMerchants data={topMerchants} />
@@ -129,7 +147,11 @@ export default function App() {
             {/* Transactions */}
             <section>
               <SectionLabel>Transactions</SectionLabel>
-              <TransactionTable transactions={transactions} />
+              <TransactionTable
+                transactions={transactions}
+                chartFilter={chartFilter}
+                onClearChartFilter={() => setSelectedBar(null)}
+              />
             </section>
           </>
         )}
@@ -146,4 +168,9 @@ export default function App() {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">{children}</h2>;
+}
+
+function fmtMonthLong(m: string) {
+  const [y, mo] = m.split('-');
+  return new Date(Number(y), Number(mo) - 1).toLocaleString('en-US', { month: 'short', year: 'numeric' });
 }
