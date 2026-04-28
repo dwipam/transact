@@ -37,6 +37,8 @@ export function catColor(cat: string, idx: number): string {
 interface Props {
   data: MonthlyCategorySpend[];
   categories: string[];
+  selectedBar?: { month: string; category: string } | null;
+  onBarSelect?: (selection: { month: string; category: string }) => void;
 }
 
 function fmtMonth(m: string) {
@@ -48,13 +50,11 @@ function fmtDollar(v: number) {
   return `$${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 }
 
-export default function CategoryChart({ data, categories }: Props) {
+export default function CategoryChart({ data, categories, selectedBar, onBarSelect }: Props) {
   const [hidden, setHidden] = useState<Set<string>>(new Set());
 
   const toggle = (cat: string) =>
     setHidden((prev) => { const n = new Set(prev); n.has(cat) ? n.delete(cat) : n.add(cat); return n; });
-
-  const display = data.map((d) => ({ ...d, month: fmtMonth(d.month) }));
 
   // Defined as a stable render prop so Recharts doesn't remount it
   const renderTooltip = ({ active, payload, label }: any) => {
@@ -64,7 +64,7 @@ export default function CategoryChart({ data, categories }: Props) {
     const total = visible.reduce((s, p) => s + Number(p.value), 0);
     return (
       <div className="bg-white border border-slate-200 rounded-xl shadow-lg p-3 text-xs min-w-40">
-        <p className="font-semibold text-slate-600 mb-2">{label}</p>
+        <p className="font-semibold text-slate-600 mb-2">{fmtMonth(label)}</p>
         {visible.map((p, i) => (
           <div key={i} className="flex items-center justify-between gap-4 py-0.5">
             <span className="flex items-center gap-1.5 text-slate-600">
@@ -122,9 +122,15 @@ export default function CategoryChart({ data, categories }: Props) {
       </div>
 
       <ResponsiveContainer width="100%" height={340}>
-        <BarChart data={display} margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
+        <BarChart data={data} margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-          <XAxis dataKey="month" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+          <XAxis
+            dataKey="month"
+            tick={{ fontSize: 12 }}
+            tickFormatter={fmtMonth}
+            axisLine={false}
+            tickLine={false}
+          />
           <YAxis tickFormatter={fmtDollar} tick={{ fontSize: 11 }} width={68} axisLine={false} tickLine={false} />
           <Tooltip
             content={renderTooltip}
@@ -140,8 +146,20 @@ export default function CategoryChart({ data, categories }: Props) {
               hide={hidden.has(cat)}
               fill={catColor(cat, i)}
               radius={i === categories.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
+              onClick={(_, index) => onBarSelect?.({ month: data[index].month, category: cat })}
             >
-              {display.map((_, j) => <Cell key={j} fill={catColor(cat, i)} />)}
+              {data.map((row, j) => {
+                const isSelected = selectedBar?.month === row.month && selectedBar.category === cat;
+                const hasSelection = Boolean(selectedBar);
+                return (
+                  <Cell
+                    key={j}
+                    fill={catColor(cat, i)}
+                    fillOpacity={hasSelection && !isSelected ? 0.35 : 1}
+                    cursor="pointer"
+                  />
+                );
+              })}
             </Bar>
           ))}
         </BarChart>

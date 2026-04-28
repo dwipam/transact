@@ -1,15 +1,25 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Transaction } from '../types';
 import { CATEGORY_COLORS } from './CategoryChart';
 import { cleanMerchantDisplay } from '../lib/categories';
 
 interface Props {
   transactions: Transaction[];
+  chartFilter?: {
+    month: string;
+    categories: string[];
+    label: string;
+  } | null;
+  onClearChartFilter?: () => void;
 }
 
 const PAGE_SIZE = 50;
 
-export default function TransactionTable({ transactions }: Props) {
+function monthKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+export default function TransactionTable({ transactions, chartFilter, onClearChartFilter }: Props) {
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
@@ -18,6 +28,9 @@ export default function TransactionTable({ transactions }: Props) {
   const categories = Array.from(new Set(expenses.map((t) => t.category))).sort();
 
   const filtered = expenses
+    .filter((t) => !chartFilter || (
+      monthKey(t.date) === chartFilter.month && chartFilter.categories.includes(t.category)
+    ))
     .filter((t) => !search || t.description.toLowerCase().includes(search.toLowerCase()))
     .filter((t) => !category || t.category === category)
     .sort((a, b) => b.date.getTime() - a.date.getTime());
@@ -27,6 +40,7 @@ export default function TransactionTable({ transactions }: Props) {
 
   function handleSearch(v: string) { setSearch(v); setPage(0); }
   function handleCategory(v: string) { setCategory(v); setPage(0); }
+  useEffect(() => setPage(0), [chartFilter?.month, chartFilter?.label]);
 
   const catColor = (cat: string) => CATEGORY_COLORS[cat] ?? '#94a3b8';
 
@@ -57,6 +71,18 @@ export default function TransactionTable({ transactions }: Props) {
           <option value="">All categories</option>
           {categories.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
+        {chartFilter && (
+          <span className="inline-flex items-center gap-1.5 text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-full">
+            Chart filter: {chartFilter.label}
+            <button
+              onClick={onClearChartFilter}
+              className="text-blue-500 hover:text-blue-700"
+              title="Clear chart filter"
+            >
+              ✕
+            </button>
+          </span>
+        )}
         <span className="text-xs text-slate-400 ml-auto">{filtered.length} transactions</span>
       </div>
 
