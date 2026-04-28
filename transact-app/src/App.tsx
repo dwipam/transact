@@ -24,7 +24,7 @@ export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadedFiles, setLoadedFiles] = useState<string[]>([]);
-  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
   const transactionsRef = useRef<HTMLElement>(null);
 
   async function handleFiles(files: File[]) {
@@ -38,26 +38,38 @@ export default function App() {
     }
   }
 
-  function reset() { setTransactions([]); setLoadedFiles([]); setSelectedMonth(null); }
+  function reset() { setTransactions([]); setLoadedFiles([]); setSelectedMonths([]); }
+
+  function removeTransaction(transaction: Transaction) {
+    setTransactions((prev) => prev.filter((t) => t !== transaction));
+  }
 
   const monthlyData   = getMonthlyCategorySpend(transactions);
   const allCategories = getAllCategories(monthlyData);
   const { data: chartData, categories: chartCategories } = getChartData(monthlyData, allCategories);
-  const monthlyTotals = getMonthlyTotals(transactions);
-  const categoryTotals = getCategoryTotals(transactions);
-  const topMerchants  = getTopMerchants(transactions);
-  const recurring     = getRecurringMerchants(transactions);
-  const stats         = getSummaryStats(transactions, monthlyData);
+  const selectedMonthSet = new Set(selectedMonths);
+  const scopedTransactions = selectedMonths.length
+    ? transactions.filter((t) => selectedMonthSet.has(monthKey(t.date)))
+    : transactions;
+  const scopedMonthlyData = getMonthlyCategorySpend(scopedTransactions);
+  const monthlyTotals = getMonthlyTotals(scopedTransactions);
+  const categoryTotals = getCategoryTotals(scopedTransactions);
+  const topMerchants  = getTopMerchants(scopedTransactions);
+  const recurring     = getRecurringMerchants(scopedTransactions);
+  const stats         = getSummaryStats(scopedTransactions, scopedMonthlyData);
   const hasData       = transactions.length > 0;
-  const chartFilter = selectedMonth ? {
-    month: selectedMonth,
-    label: fmtMonthLong(selectedMonth),
+  const chartFilter = selectedMonths.length ? {
+    months: selectedMonths,
+    label: fmtMonthSelection(selectedMonths),
   } : null;
 
   function handleMonthSelect(month: string) {
-    const isSameSelection = selectedMonth === month;
-    setSelectedMonth(isSameSelection ? null : month);
-    if (!isSameSelection) {
+    const isSelected = selectedMonths.includes(month);
+    const nextMonths = isSelected
+      ? selectedMonths.filter((m) => m !== month)
+      : [...selectedMonths, month].sort();
+    setSelectedMonths(nextMonths);
+    if (!isSelected) {
       requestAnimationFrame(() => transactionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
     }
   }
@@ -127,7 +139,7 @@ export default function App() {
                   <CategoryChart
                     data={chartData}
                     categories={chartCategories}
-                    selectedMonth={selectedMonth}
+                    selectedMonths={selectedMonths}
                     onMonthSelect={handleMonthSelect}
                   />
                 </div>
@@ -151,7 +163,8 @@ export default function App() {
               <TransactionTable
                 transactions={transactions}
                 chartFilter={chartFilter}
-                onClearChartFilter={() => setSelectedMonth(null)}
+                onClearChartFilter={() => setSelectedMonths([])}
+                onRemoveTransaction={removeTransaction}
               />
             </section>
           </>
@@ -174,4 +187,13 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 function fmtMonthLong(m: string) {
   const [y, mo] = m.split('-');
   return new Date(Number(y), Number(mo) - 1).toLocaleString('en-US', { month: 'short', year: 'numeric' });
+}
+
+function fmtMonthSelection(months: string[]) {
+  if (months.length === 1) return fmtMonthLong(months[0]);
+  return `${months.length} months selected`;
+}
+
+function monthKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }

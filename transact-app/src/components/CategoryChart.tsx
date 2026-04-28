@@ -10,7 +10,7 @@ import { catColor } from '../lib/categoryColors';
 interface Props {
   data: MonthlyCategorySpend[];
   categories: string[];
-  selectedMonth?: string | null;
+  selectedMonths?: string[];
   onMonthSelect?: (month: string) => void;
 }
 
@@ -23,8 +23,9 @@ function fmtDollar(v: number) {
   return `$${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 }
 
-export default function CategoryChart({ data, categories, selectedMonth, onMonthSelect }: Props) {
+export default function CategoryChart({ data, categories, selectedMonths = [], onMonthSelect }: Props) {
   const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const selectedMonthSet = new Set(selectedMonths);
 
   const toggle = (cat: string) =>
     setHidden((prev) => {
@@ -100,7 +101,11 @@ export default function CategoryChart({ data, categories, selectedMonth, onMonth
       </div>
 
       <ResponsiveContainer width="100%" height={340}>
-        <BarChart data={data} margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
+        <BarChart
+          data={data}
+          margin={{ top: 4, right: 16, left: 8, bottom: 4 }}
+          accessibilityLayer={false}
+        >
           <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
           <XAxis
             dataKey="month"
@@ -124,19 +129,22 @@ export default function CategoryChart({ data, categories, selectedMonth, onMonth
               stackId="a"
               hide={hidden.has(cat)}
               fill={catColor(cat, i)}
+              stroke="none"
               radius={i === categories.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
+              activeBar={false}
               onClick={(entry) => {
                 if (Number(entry.value) <= 0) return;
                 onMonthSelect?.(String(entry.payload.month));
               }}
             >
               {data.map((row, j) => {
-                const isSelected = selectedMonth === row.month;
-                const hasSelection = Boolean(selectedMonth);
+                const isSelected = selectedMonthSet.has(row.month);
+                const hasSelection = selectedMonthSet.size > 0;
                 return (
                   <Cell
                     key={j}
                     fill={catColor(cat, i)}
+                    stroke="none"
                     fillOpacity={hasSelection && !isSelected ? 0.35 : 1}
                     cursor="pointer"
                   />

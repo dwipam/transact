@@ -6,3 +6,24 @@ body {
   background: #f8fafc;
   color: #1e293b;
 }
+
+.recharts-wrapper:focus,
+.recharts-wrapper:focus-visible,
+.recharts-surface:focus,
+.recharts-surface:focus-visible,
+.recharts-layer:focus,
+.recharts-layer:focus-visible,
+.recharts-bar-rectangle:focus,
+.recharts-bar-rectangle:focus-visible,
+.recharts-bar-rectangle path:focus,
+.recharts-bar-rectangle path:focus-visible,
+.recharts-bar-rectangle rect:focus,
+.recharts-bar-rectangle rect:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.recharts-bar-rectangle path,
+.recharts-bar-rectangle rect {
+  stroke-width: 0 !important;
+}
