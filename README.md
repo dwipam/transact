@@ -2,8 +2,6 @@
 
 Transact is a local credit card transaction analysis app. Upload CSV statements, inspect spending by month and category, and filter the dashboard without sending data to a server.
 
-The web app lives in [`transact-app/`](transact-app/).
-
 ## Features
 
 - Parse common credit card CSV exports, including Chase, Amex, Citi, Capital One, and best-effort unknown formats.
@@ -18,7 +16,6 @@ The web app lives in [`transact-app/`](transact-app/).
 Install dependencies:
 
 ```sh
-cd transact-app
 npm install
 ```
 
