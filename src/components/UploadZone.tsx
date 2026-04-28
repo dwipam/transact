@@ -40,6 +40,9 @@ export default function UploadZone({ onFiles, loading }: Props) {
         <>
           <p className="text-slate-700 font-medium text-lg">Drop CSV files here or click to browse</p>
           <p className="text-slate-400 text-sm mt-1">Supports Chase, Amex, Citi, Capital One</p>
+          <p className="text-slate-500 text-xs mt-2">
+            Download transactions from your credit card account in .csv format, then upload them here.
+          </p>
         </>
       )}
     </div>
