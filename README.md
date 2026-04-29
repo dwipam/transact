@@ -10,6 +10,7 @@ Transact is a free credit card spend analysis app. Upload CSV transaction statem
 - Click one or more bars in the category chart to filter the dashboard by selected months.
 - Search, category-filter, sort, paginate, and remove transactions from the table.
 - Removed transactions update every dashboard view immediately.
+- Based on your transactions, see recommendations to maximize your cash backs
 
 ## Development
 
