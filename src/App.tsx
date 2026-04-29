@@ -19,12 +19,14 @@ import CategoryBreakdown from './components/CategoryBreakdown';
 import TopMerchants from './components/TopMerchants';
 import RecurringTable from './components/RecurringTable';
 import TransactionTable from './components/TransactionTable';
+import WhatIfRecommender from './components/WhatIfRecommender';
 
 export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadedFiles, setLoadedFiles] = useState<string[]>([]);
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
+  const [cardBySource, setCardBySource] = useState<Record<string, string>>({});
   const transactionsRef = useRef<HTMLElement>(null);
 
   async function handleFiles(files: File[]) {
@@ -38,7 +40,23 @@ export default function App() {
     }
   }
 
-  function reset() { setTransactions([]); setLoadedFiles([]); setSelectedMonths([]); }
+  function reset() {
+    setTransactions([]);
+    setLoadedFiles([]);
+    setSelectedMonths([]);
+    setCardBySource({});
+  }
+
+  function assignCardToSource(source: string, cardId: string) {
+    setCardBySource((prev) => {
+      if (!cardId) {
+        const next = { ...prev };
+        delete next[source];
+        return next;
+      }
+      return { ...prev, [source]: cardId };
+    });
+  }
 
   function removeTransaction(transaction: Transaction) {
     setTransactions((prev) => prev.filter((t) => t !== transaction));
@@ -57,6 +75,7 @@ export default function App() {
   const topMerchants  = getTopMerchants(scopedTransactions);
   const recurring     = getRecurringMerchants(scopedTransactions);
   const stats         = getSummaryStats(scopedTransactions, scopedMonthlyData);
+  const sources       = Array.from(new Set(transactions.map((t) => t.source))).sort();
   const hasData       = transactions.length > 0;
   const chartFilter = selectedMonths.length ? {
     months: selectedMonths,
@@ -156,6 +175,17 @@ export default function App() {
                 <RecurringTable merchants={recurring} />
               </section>
             )}
+
+            {/* What-if recommender */}
+            <section>
+              <SectionLabel>Card Recommendations</SectionLabel>
+              <WhatIfRecommender
+                transactions={scopedTransactions}
+                sources={sources}
+                cardBySource={cardBySource}
+                onAssignCard={assignCardToSource}
+              />
+            </section>
 
             {/* Transactions */}
             <section ref={transactionsRef}>
