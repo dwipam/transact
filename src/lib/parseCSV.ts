@@ -34,13 +34,25 @@ function parseAmount(s: string): number {
   return parseFloat(s.replace(/[$,]/g, ''));
 }
 
+function normalizeChaseCreditAmount(row: Row): number {
+  const rawAmount = parseAmount(row['Amount'] || row['amount'] || '0');
+  const type = collapseSpaces(row['Type'] || row['type'] || '').toLowerCase();
+  const magnitude = Math.abs(rawAmount);
+
+  // Chase credit card exports represent purchases as negative amounts. Internally,
+  // expenses are positive and credits/payments/refunds are negative.
+  if (/payment|credit|return|refund/.test(type)) return -magnitude;
+  if (/sale|purchase|fee|advance/.test(type)) return magnitude;
+
+  return rawAmount < 0 ? magnitude : rawAmount;
+}
+
 function mapChase(row: Row, source: string): Transaction | null {
   const dateStr = row['Transaction Date'] || row['transaction date'];
   const desc = row['Description'] || row['description'] || '';
-  const amtStr = row['Amount'] || row['amount'] || '0';
   const category = row['Category'] || row['category'] || 'Uncategorized';
   if (!dateStr) return null;
-  const amount = parseAmount(amtStr);
+  const amount = normalizeChaseCreditAmount(row);
   return { date: parseDate(dateStr), description: desc.trim(), amount, category: normalizeCategory(category), source };
 }
 

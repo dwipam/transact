@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell,
+  ResponsiveContainer, Cell, LineChart, Line,
 } from 'recharts';
 import type { TooltipContentProps } from 'recharts';
 import type { MonthlyCategorySpend } from '../lib/analyze';
@@ -23,8 +23,22 @@ function fmtDollar(v: number) {
   return `$${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 }
 
+function getTooltipMonth(label: unknown, payload: unknown) {
+  if (typeof label === 'string' && /^\d{4}-\d{2}$/.test(label)) return label;
+  if (
+    payload &&
+    typeof payload === 'object' &&
+    'month' in payload &&
+    typeof payload.month === 'string'
+  ) {
+    return payload.month;
+  }
+  return null;
+}
+
 export default function CategoryChart({ data, categories, selectedMonths = [], onMonthSelect }: Props) {
   const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const [view, setView] = useState<'bar' | 'trend'>('bar');
   const selectedMonthSet = new Set(selectedMonths);
 
   const toggle = (cat: string) =>
@@ -40,10 +54,11 @@ export default function CategoryChart({ data, categories, selectedMonths = [], o
     if (!active || !payload?.length) return null;
     const visible = payload.filter((p) => !hidden.has(String(p.dataKey)) && Number(p.value) > 0);
     if (!visible.length) return null;
+    const month = getTooltipMonth(label, visible[0]?.payload);
     const total = visible.reduce((s, p) => s + Number(p.value), 0);
     return (
       <div className="bg-white border border-slate-200 rounded-xl shadow-lg p-3 text-xs min-w-40">
-        <p className="font-semibold text-slate-600 mb-2">{fmtMonth(String(label ?? ''))}</p>
+        <p className="font-semibold text-slate-600 mb-2">{month ? fmtMonth(month) : 'Selected month'}</p>
         {visible.map((p, i) => (
           <div key={i} className="flex items-center justify-between gap-4 py-0.5">
             <span className="flex items-center gap-1.5 text-slate-600">
@@ -64,13 +79,31 @@ export default function CategoryChart({ data, categories, selectedMonths = [], o
 
   return (
     <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
         <h2 className="text-base font-semibold text-slate-800">Spend by Category &amp; Month</h2>
-        {hidden.size > 0 && (
-          <button onClick={() => setHidden(new Set())} className="text-xs text-blue-500 hover:text-blue-700">
-            Show all
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs">
+            <button
+              type="button"
+              onClick={() => setView('bar')}
+              className={`px-2.5 py-1 rounded-md transition-colors ${view === 'bar' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+            >
+              Bar
+            </button>
+            <button
+              type="button"
+              onClick={() => setView('trend')}
+              className={`px-2.5 py-1 rounded-md transition-colors ${view === 'trend' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+            >
+              Trend
+            </button>
+          </div>
+          {hidden.size > 0 && (
+            <button onClick={() => setHidden(new Set())} className="text-xs text-blue-500 hover:text-blue-700">
+              Show all
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Clickable legend pills */}
@@ -101,58 +134,91 @@ export default function CategoryChart({ data, categories, selectedMonths = [], o
       </div>
 
       <ResponsiveContainer width="100%" height={340}>
-        <BarChart
-          data={data}
-          margin={{ top: 4, right: 16, left: 8, bottom: 4 }}
-          accessibilityLayer={false}
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-          <XAxis
-            dataKey="month"
-            tick={{ fontSize: 12 }}
-            tickFormatter={fmtMonth}
-            axisLine={false}
-            tickLine={false}
-          />
-          <YAxis tickFormatter={fmtDollar} tick={{ fontSize: 11 }} width={68} axisLine={false} tickLine={false} />
-          <Tooltip
-            content={renderTooltip}
-            wrapperStyle={{ zIndex: 50 }}
-            shared={false}
-            cursor={false}
-            allowEscapeViewBox={{ x: false, y: true }}
-          />
-          {categories.map((cat, i) => (
-            <Bar
-              key={cat}
-              dataKey={cat}
-              stackId="a"
-              hide={hidden.has(cat)}
-              fill={catColor(cat, i)}
-              stroke="none"
-              radius={i === categories.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
-              activeBar={false}
-              onClick={(entry) => {
-                if (Number(entry.value) <= 0) return;
-                onMonthSelect?.(String(entry.payload.month));
-              }}
-            >
-              {data.map((row, j) => {
-                const isSelected = selectedMonthSet.has(row.month);
-                const hasSelection = selectedMonthSet.size > 0;
-                return (
-                  <Cell
-                    key={j}
-                    fill={catColor(cat, i)}
-                    stroke="none"
-                    fillOpacity={hasSelection && !isSelected ? 0.35 : 1}
-                    cursor="pointer"
-                  />
-                );
-              })}
-            </Bar>
-          ))}
-        </BarChart>
+        {view === 'bar' ? (
+          <BarChart
+            data={data}
+            margin={{ top: 4, right: 16, left: 8, bottom: 4 }}
+            accessibilityLayer={false}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+            <XAxis
+              dataKey="month"
+              tick={{ fontSize: 12 }}
+              tickFormatter={fmtMonth}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis tickFormatter={fmtDollar} tick={{ fontSize: 11 }} width={68} axisLine={false} tickLine={false} />
+            <Tooltip
+              content={renderTooltip}
+              wrapperStyle={{ zIndex: 50 }}
+              shared={false}
+              cursor={false}
+              allowEscapeViewBox={{ x: false, y: true }}
+            />
+            {categories.map((cat, i) => (
+              <Bar
+                key={cat}
+                dataKey={cat}
+                stackId="a"
+                hide={hidden.has(cat)}
+                fill={catColor(cat, i)}
+                stroke="none"
+                radius={i === categories.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
+                activeBar={false}
+                onClick={(entry) => {
+                  if (Number(entry.value) <= 0) return;
+                  onMonthSelect?.(String(entry.payload.month));
+                }}
+              >
+                {data.map((row, j) => {
+                  const isSelected = selectedMonthSet.has(row.month);
+                  const hasSelection = selectedMonthSet.size > 0;
+                  return (
+                    <Cell
+                      key={j}
+                      fill={catColor(cat, i)}
+                      stroke="none"
+                      fillOpacity={hasSelection && !isSelected ? 0.35 : 1}
+                      cursor="pointer"
+                    />
+                  );
+                })}
+              </Bar>
+            ))}
+          </BarChart>
+        ) : (
+          <LineChart data={data} margin={{ top: 4, right: 24, left: 8, bottom: 4 }} accessibilityLayer={false}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+            <XAxis
+              dataKey="month"
+              tick={{ fontSize: 12 }}
+              tickFormatter={fmtMonth}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis tickFormatter={fmtDollar} tick={{ fontSize: 11 }} width={68} axisLine={false} tickLine={false} />
+            <Tooltip
+              content={renderTooltip}
+              wrapperStyle={{ zIndex: 50 }}
+              cursor={{ stroke: '#94a3b8', strokeWidth: 1, strokeDasharray: '4 4' }}
+              allowEscapeViewBox={{ x: false, y: true }}
+            />
+            {categories.map((cat, i) => (
+              <Line
+                key={cat}
+                type="monotone"
+                dataKey={cat}
+                hide={hidden.has(cat)}
+                stroke={catColor(cat, i)}
+                strokeWidth={2}
+                dot={{ r: 2.5, strokeWidth: 0, fill: catColor(cat, i) }}
+                activeDot={{ r: 4, strokeWidth: 0, fill: catColor(cat, i) }}
+                connectNulls
+              />
+            ))}
+          </LineChart>
+        )}
       </ResponsiveContainer>
     </div>
   );
