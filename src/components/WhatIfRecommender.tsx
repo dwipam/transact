@@ -44,6 +44,7 @@ function creditSummary(credits: CardCredit[]): string {
 export default function WhatIfRecommender({ transactions, sources, cardBySource, onAssignCard }: Props) {
   const [disabledCreditKeys, setDisabledCreditKeys] = useState<Record<string, true>>({});
   const [creditsExpanded, setCreditsExpanded] = useState(false);
+  const [allCardsExpanded, setAllCardsExpanded] = useState(false);
 
   if (transactions.length === 0) return null;
 
@@ -76,6 +77,8 @@ export default function WhatIfRecommender({ transactions, sources, cardBySource,
   const portfolioCardIds = new Set(portfolio.byCard.map((b) => b.card.id));
   const hasPortfolio = portfolio.byCard.length > 0;
   const months = candidates[0]?.monthsCovered ?? 0;
+  const visibleCandidates = allCardsExpanded ? candidates : candidates.slice(0, 3);
+  const hiddenCardCount = Math.max(candidates.length - visibleCandidates.length, 0);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
@@ -206,7 +209,7 @@ export default function WhatIfRecommender({ transactions, sources, cardBySource,
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
-            {candidates.map((r, i) => {
+            {visibleCandidates.map((r, i) => {
               const inPortfolio = portfolioCardIds.has(r.cardId);
               const delta = r.netRewards - portfolio.netRewards;
               const isTop = i === 0;
@@ -263,6 +266,19 @@ export default function WhatIfRecommender({ transactions, sources, cardBySource,
           </tbody>
         </table>
       </div>
+
+      {candidates.length > 3 && (
+        <div className="px-6 py-3 border-t border-slate-100 bg-white flex justify-center">
+          <button
+            type="button"
+            onClick={() => setAllCardsExpanded((prev) => !prev)}
+            aria-expanded={allCardsExpanded}
+            className="text-xs font-medium text-blue-600 hover:text-blue-700 border border-blue-100 hover:border-blue-200 bg-blue-50/60 px-3 py-1.5 rounded-full transition-colors"
+          >
+            {allCardsExpanded ? 'Show top 3 only' : `Show ${hiddenCardCount} more card${hiddenCardCount === 1 ? '' : 's'}`}
+          </button>
+        </div>
+      )}
 
       <div className="px-6 py-3 border-t border-slate-100 bg-slate-50/40 text-xs text-slate-400">
         Reward estimates use issuer-published base rates and annualized statement credits if fully used, but don't model
