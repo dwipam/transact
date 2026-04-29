@@ -6,4 +6,4 @@ export interface Transaction {
   source: string; // filename / card label
 }
 
-export type CardFormat = 'chase' | 'amex' | 'citi' | 'capitalOne' | 'unknown';
+export type CardFormat = 'chase' | 'chaseChecking' | 'amex' | 'citi' | 'capitalOne' | 'unknown';
