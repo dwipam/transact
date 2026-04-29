@@ -11,12 +11,37 @@ interface Props {
   onAssignCard: (source: string, cardId: string) => void;
 }
 
-const ISSUER_COLORS: Record<string, string> = {
-  Chase: '#1e40af',
-  Amex: '#0e7490',
-  Citi: '#1d4ed8',
-  'Capital One': '#b91c1c',
-  BoA: '#991b1b',
+const ISSUER_BRANDS: Record<string, { label: string; short: string; gradient: string; accent: string }> = {
+  Chase: {
+    label: 'Chase',
+    short: 'CHASE',
+    gradient: 'linear-gradient(135deg, #0b4ea2 0%, #1d4ed8 100%)',
+    accent: '#60a5fa',
+  },
+  Amex: {
+    label: 'American Express',
+    short: 'AMEX',
+    gradient: 'linear-gradient(135deg, #0f6b8f 0%, #22d3ee 100%)',
+    accent: '#cffafe',
+  },
+  Citi: {
+    label: 'Citi',
+    short: 'citi',
+    gradient: 'linear-gradient(135deg, #1d4ed8 0%, #dc2626 100%)',
+    accent: '#bfdbfe',
+  },
+  'Capital One': {
+    label: 'Capital One',
+    short: 'C1',
+    gradient: 'linear-gradient(135deg, #b91c1c 0%, #1e3a8a 100%)',
+    accent: '#fecaca',
+  },
+  BoA: {
+    label: 'Bank of America',
+    short: 'BofA',
+    gradient: 'linear-gradient(135deg, #991b1b 0%, #1d4ed8 100%)',
+    accent: '#fecaca',
+  },
 };
 
 function fmtDollar(v: number): string {
@@ -39,6 +64,31 @@ function creditSummary(credits: CardCredit[]): string {
     .filter(Boolean)
     .map((credit) => `${fmtDollar(credit.amount)} ${credit.label}${credit.period === 'four_years' ? ' / 4 yrs' : ''}`);
   return rest.length ? `${labels.join(' + ')} + ${rest.length} more` : labels.join(' + ');
+}
+
+function IssuerMark({ issuer }: { issuer: string }) {
+  const brand = ISSUER_BRANDS[issuer] ?? {
+    label: issuer,
+    short: issuer.slice(0, 4).toUpperCase(),
+    gradient: 'linear-gradient(135deg, #475569 0%, #94a3b8 100%)',
+    accent: '#cbd5e1',
+  };
+
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm ring-1 ring-black/5"
+      style={{ background: brand.gradient }}
+      title={brand.label}
+      aria-label={brand.label}
+    >
+      <span
+        className="h-2 w-2 rounded-full bg-white/90 shadow-inner"
+        style={{ boxShadow: `0 0 0 2px ${brand.accent}` }}
+        aria-hidden="true"
+      />
+      {brand.short}
+    </span>
+  );
 }
 
 export default function WhatIfRecommender({ transactions, sources, cardBySource, onAssignCard }: Props) {
@@ -223,15 +273,7 @@ export default function WhatIfRecommender({ transactions, sources, cardBySource,
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span
-                        className="text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wide"
-                        style={{
-                          background: (ISSUER_COLORS[r.issuer] ?? '#64748b') + '15',
-                          color: ISSUER_COLORS[r.issuer] ?? '#64748b',
-                        }}
-                      >
-                        {r.issuer}
-                      </span>
+                      <IssuerMark issuer={r.issuer} />
                       <span className="font-medium text-slate-700">{r.cardName}</span>
                       {inPortfolio && (
                         <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium uppercase">
