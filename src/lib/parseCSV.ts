@@ -1,12 +1,13 @@
 import Papa from 'papaparse';
 import type { Transaction, CardFormat } from '../types';
-import { normalizeCategory } from './categories';
+import { inferCategoryFromMerchant, normalizeCategory } from './categories';
 
 type Row = Record<string, string>;
 
 function detectFormat(headers: string[]): CardFormat {
   const h = headers.map((s) => s.toLowerCase().trim());
   if (h.includes('transaction date') && h.includes('post date') && h.includes('memo')) return 'chase';
+  if (h.includes('account number') && h.includes('transaction description') && h.includes('balance')) return 'chaseChecking';
   if (h.includes('extended details') || h.includes('appears on your statement as')) return 'amex';
   if (h.includes('status') && h.includes('debit') && h.includes('credit') && h.length < 8) return 'citi';
   if (h.includes('card no.') || h.includes('card no')) return 'capitalOne';
@@ -33,13 +34,25 @@ function parseAmount(s: string): number {
   return parseFloat(s.replace(/[$,]/g, ''));
 }
 
+function normalizeChaseCreditAmount(row: Row): number {
+  const rawAmount = parseAmount(row['Amount'] || row['amount'] || '0');
+  const type = collapseSpaces(row['Type'] || row['type'] || '').toLowerCase();
+  const magnitude = Math.abs(rawAmount);
+
+  // Chase credit card exports represent purchases as negative amounts. Internally,
+  // expenses are positive and credits/payments/refunds are negative.
+  if (/payment|credit|return|refund/.test(type)) return -magnitude;
+  if (/sale|purchase|fee|advance/.test(type)) return magnitude;
+
+  return rawAmount < 0 ? magnitude : rawAmount;
+}
+
 function mapChase(row: Row, source: string): Transaction | null {
   const dateStr = row['Transaction Date'] || row['transaction date'];
   const desc = row['Description'] || row['description'] || '';
-  const amtStr = row['Amount'] || row['amount'] || '0';
   const category = row['Category'] || row['category'] || 'Uncategorized';
   if (!dateStr) return null;
-  const amount = parseAmount(amtStr);
+  const amount = normalizeChaseCreditAmount(row);
   return { date: parseDate(dateStr), description: desc.trim(), amount, category: normalizeCategory(category), source };
 }
 
@@ -89,6 +102,31 @@ function mapCiti(row: Row, source: string): Transaction | null {
   };
 }
 
+function mapChaseChecking(row: Row, source: string): Transaction | null {
+  const dateStr = row['Transaction Date'] || row['transaction date'] || '';
+  const desc = row['Transaction Description'] || row['transaction description'] || '';
+  const amtStr = row['Transaction Amount'] || row['transaction amount'] || '';
+  const type = (row['Transaction Type'] || row['transaction type'] || '').toUpperCase();
+  if (!dateStr) return null;
+
+  // Chase Checking exports vary: some files use signed amounts, others use absolute
+  // values with the Type column ("Debit" / "Credit" / "ACH_DEBIT" / "ACH_CREDIT") as
+  // the only direction indicator. Normalize to magnitude + Type so we get a consistent
+  // sign regardless of which export style is in use.
+  const magnitude = Math.abs(parseAmount(amtStr));
+  const isCredit = type.includes('CREDIT') || type === 'DEPOSIT';
+  const amount = isCredit ? -magnitude : magnitude;
+
+  const description = collapseSpaces(desc);
+  return {
+    date: parseDate(dateStr),
+    description,
+    amount,
+    category: inferCategoryFromMerchant(description),
+    source,
+  };
+}
+
 function mapCapitalOne(row: Row, source: string): Transaction | null {
   const dateStr = row['Transaction Date'] || row['transaction date'];
   const desc = row['Description'] || row['description'] || '';
@@ -128,14 +166,21 @@ export async function parseCSVFile(file: File): Promise<Transaction[]> {
         const format = detectFormat(headers);
         const source = file.name.replace(/\.csv$/i, '');
         const txns: Transaction[] = [];
+        const dropped: { row: Row; reason: string }[] = [];
         for (const row of results.data) {
           const txn =
             format === 'chase' ? mapChase(row, source) :
+            format === 'chaseChecking' ? mapChaseChecking(row, source) :
             format === 'amex' ? mapAmex(row, source) :
             format === 'citi' ? mapCiti(row, source) :
             format === 'capitalOne' ? mapCapitalOne(row, source) :
             mapUnknown(row, headers, source);
-          if (txn && !isNaN(txn.date.getTime())) txns.push(txn);
+          if (!txn) { dropped.push({ row, reason: 'mapper returned null (missing required column)' }); continue; }
+          if (isNaN(txn.date.getTime())) { dropped.push({ row, reason: 'unparseable date' }); continue; }
+          txns.push(txn);
+        }
+        if (dropped.length) {
+          console.warn(`[parseCSV] ${file.name}: dropped ${dropped.length}/${results.data.length} rows (format=${format}). Sample:`, dropped.slice(0, 5));
         }
         resolve(txns);
       },

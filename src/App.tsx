@@ -81,7 +81,7 @@ export default function App() {
           <div className="flex items-center gap-2">
             <span className="text-xl font-bold text-slate-800">Transact</span>
             <span className="text-slate-300">·</span>
-            <span className="text-slate-400 text-sm">credit card analysis</span>
+            <span className="text-slate-400 text-sm">credit card spend analyzer</span>
           </div>
           {hasData && (
             <button
