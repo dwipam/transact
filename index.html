@@ -4,10 +4,183 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>transact-app</title>
+    <meta
+      name="description"
+      content="Open-source credit card spend analyzer for CSV statements. Analyze transactions, find recurring charges, compare card rewards, estimate cashback, and discover expected upside."
+    />
+    <meta
+      name="keywords"
+      content="credit card spend analyzer, credit card transaction analyzer, credit card CSV analyzer, cashback calculator, credit card rewards calculator, credit card rewards optimizer, credit card statement analyzer, recurring charges analyzer, personal finance CSV analyzer, spending insights"
+    />
+    <meta name="author" content="Transact" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Credit Card Spend Analyzer | CSV Rewards & Cashback Optimizer" />
+    <meta
+      property="og:description"
+      content="Upload credit card CSV statements to analyze spending, find recurring charges, compare rewards, estimate cashback, and discover better card options."
+    />
+    <meta property="og:site_name" content="Transact" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Credit Card Spend Analyzer | CSV Rewards & Cashback Optimizer" />
+    <meta
+      name="twitter:description"
+      content="Analyze credit card CSVs, compare cashback rewards, identify recurring charges, and estimate card upside locally in your browser."
+    />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Transact",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "Web",
+        "description": "Open-source credit card spend analyzer for CSV statements, rewards comparison, cashback estimates, recurring charges, and spending insights.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Is my credit card data uploaded anywhere?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. Transact runs entirely in your browser. CSV files are parsed client-side; no transactions are sent to any server."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Which credit card issuers are supported?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "CSV exports from Chase, American Express, Citi, Capital One, and Bank of America are recognized automatically. Other CSVs fall back to a best-effort parser."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does the cashback recommender work?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Each transaction is replayed against the reward rules of major credit cards (rates, category bonuses, caps, annual fees) to estimate net annual cash back. Results are ranked against your current portfolio so you can see the upside of switching cards."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does Transact identify recurring subscriptions?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Merchants that appear across two or more months are surfaced with their average monthly cost, making it easy to spot subscriptions you forgot about."
+            }
+          }
+        ]
+      }
+    </script>
+    <style>
+      body { margin: 0; background: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+      .seo-landing { max-width: 64rem; margin: 0 auto; padding: 2.5rem 1.25rem; color: #1e293b; }
+      .seo-landing .brand { display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 2rem; }
+      .seo-landing .brand strong { font-size: 1.25rem; color: #1e293b; }
+      .seo-landing .brand span { color: #94a3b8; font-size: 0.875rem; }
+      .seo-landing h1 { font-size: 2rem; font-weight: 700; margin: 0 0 0.75rem; line-height: 1.2; }
+      .seo-landing h2 { font-size: 1.25rem; font-weight: 600; margin: 2rem 0 0.75rem; color: #0f172a; }
+      .seo-landing p { line-height: 1.65; color: #475569; margin: 0 0 0.75rem; }
+      .seo-landing ul { padding-left: 1.25rem; color: #475569; line-height: 1.7; }
+      .seo-landing li { margin-bottom: 0.25rem; }
+      .seo-landing .lede { font-size: 1.125rem; color: #334155; }
+      .seo-landing .grid { display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-top: 1rem; }
+      .seo-landing .grid h3 { font-size: 1rem; font-weight: 600; margin: 0 0 0.25rem; color: #0f172a; }
+      .seo-landing .grid p { font-size: 0.9rem; }
+      .seo-landing .loading { margin-top: 2.5rem; padding: 1rem; border: 1px dashed #cbd5e1; border-radius: 0.75rem; color: #64748b; font-size: 0.875rem; text-align: center; }
+      .seo-landing .brand a { margin-left: auto; color: #475569; text-decoration: none; font-size: 0.8rem; border: 1px solid #e2e8f0; padding: 0.25rem 0.65rem; border-radius: 0.5rem; }
+      .seo-landing .brand a:hover { color: #0f172a; border-color: #cbd5e1; }
+      .seo-landing .brand { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 2rem; }
+    </style>
+    <title>Credit Card Spend Analyzer | CSV Rewards & Cashback Optimizer</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <main class="seo-landing">
+        <div class="brand">
+          <strong>Transact</strong>
+          <span>· credit card spend analyzer</span>
+          <a href="https://github.com/dwipam/transact" target="_blank" rel="noopener noreferrer">GitHub →</a>
+        </div>
+
+        <h1>Credit Card Spend Analyzer</h1>
+        <p class="lede">
+          Upload your credit card CSV statements and instantly visualize where your money goes,
+          surface recurring subscriptions, and find the credit card that maximizes your cash back.
+          Everything runs locally in your browser — your transactions never leave your device.
+        </p>
+
+        <h2>How it works</h2>
+        <ul>
+          <li><strong>Upload CSVs</strong> exported from Chase, American Express, Citi, Capital One, or Bank of America.</li>
+          <li><strong>Explore</strong> monthly spend trends, category breakdowns, top merchants, and recurring charges.</li>
+          <li><strong>Compare</strong> what you would have earned on every major rewards card and see the upside of switching.</li>
+        </ul>
+
+        <h2>What you can do</h2>
+        <div class="grid">
+          <div>
+            <h3>Spend trends</h3>
+            <p>Monthly totals, average spend, and category breakdowns from any combination of CSV files.</p>
+          </div>
+          <div>
+            <h3>Recurring charges</h3>
+            <p>Automatically surface subscriptions and merchants billing you across multiple months.</p>
+          </div>
+          <div>
+            <h3>Cashback simulator</h3>
+            <p>Replay your spending against major credit cards' reward rules — including category caps and annual fees.</p>
+          </div>
+          <div>
+            <h3>Card recommendations</h3>
+            <p>Rank cards by net rewards over your real history and see exactly how much you'd save by switching.</p>
+          </div>
+        </div>
+
+        <h2>Supported credit card issuers</h2>
+        <ul>
+          <li>Chase — Sapphire Preferred, Freedom Unlimited, Freedom Flex, and more</li>
+          <li>American Express — Gold, Blue Cash Preferred, Blue Cash Everyday, Platinum</li>
+          <li>Citi — Double Cash, Strata Premier</li>
+          <li>Capital One — Venture X, SavorOne, Quicksilver</li>
+          <li>Bank of America — Customized Cash Rewards, Premium Rewards, Travel Rewards</li>
+        </ul>
+
+        <h2>Privacy</h2>
+        <p>
+          Transact is open source and fully client-side. CSV files are parsed in your browser using JavaScript;
+          no transaction data is uploaded, stored, or shared with any third party.
+        </p>
+
+        <h2>Frequently asked questions</h2>
+        <h3>Is my credit card data uploaded anywhere?</h3>
+        <p>No. Transact runs entirely in your browser. CSVs are parsed locally and nothing is sent to a server.</p>
+        <h3>Which credit card issuers are supported?</h3>
+        <p>CSV exports from Chase, American Express, Citi, Capital One, and Bank of America are recognized automatically. Other CSVs fall back to a best-effort parser.</p>
+        <h3>How does the cashback recommender work?</h3>
+        <p>Each transaction is replayed against the reward rules of major credit cards (rates, category bonuses, caps, annual fees) to estimate net annual cash back, then ranked against your real card portfolio.</p>
+        <h3>Does Transact identify recurring subscriptions?</h3>
+        <p>Yes. Merchants that appear across two or more months are surfaced with their average monthly cost.</p>
+
+        <h2>Open source &amp; contributions</h2>
+        <p>
+          Transact is open source under an MIT license. Bug reports, parser improvements for new CSV formats,
+          and additional credit card reward rules are all welcome on
+          <a href="https://github.com/dwipam/transact" target="_blank" rel="noopener noreferrer">GitHub</a>.
+        </p>
+
+        <p class="loading">Loading the analyzer…</p>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
